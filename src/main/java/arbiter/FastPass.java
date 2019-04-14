@@ -27,7 +27,6 @@ public class FastPass implements Runnable {
         wait_list_route = new LinkedList<Set<Pair>>();
     }
 
-    @Override
     public void run() {
         // TODO
         Thread s = new Thread(new Server());

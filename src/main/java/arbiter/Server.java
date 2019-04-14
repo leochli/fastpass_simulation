@@ -1,7 +1,6 @@
 package arbiter;
 
 class Server implements Runnable {
-    @Override
     public void run() {
         int source;
         int dest;

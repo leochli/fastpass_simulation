@@ -15,7 +15,6 @@ class AddressExtractor implements Runnable {
         last_assigned = new HashMap<String, Long>();
     }
 
-    @Override
     public void run() {
         while (true) {
             to_add_last_assigned = 0L;
