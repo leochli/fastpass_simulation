@@ -8,9 +8,9 @@ class Server implements Runnable {
             source = -1;
             dest = -1;
             while (source == -1 || source == 17)
-                source = (int) (Math.random() * 16 + 1);
+                source = (int) (Math.random() * 16);
             while (dest == -1 || dest == 17 || dest == source)
-                dest = (int) (Math.random() * 16 + 1);
+                dest = (int) (Math.random() * 16);
             while (FastPass.addRequest(source + FastPass.DELIMITER + dest) == false) ;
             //System.out.println(source + " " + dest);
         }
