@@ -32,7 +32,8 @@ class RouteScheduler implements Runnable {
             int[][] graph = new int[endPointsNum][endPointsNum];
             long cur_timeslot = 0;
 
-            HashMap<Integer, Set<Integer>> ToR_send_CoreSet_map = new HashMap<>();
+
+            HashMap<Integer, Set<Integer>> ToR_send_CoreSet_map = new HashMap<Integer, Set<Integer>>();
 
             for (int i = 0; i < ToRSwitchNum; i++) {
                 ToR_send_CoreSet_map.put(i, new HashSet<Integer>());
@@ -47,11 +48,11 @@ class RouteScheduler implements Runnable {
                 //System.out.println("Source: " + next.src + " Destination: " + next.dest + " Timeslot: " + next.last_assigned);
             }
 
-            List<RouteInfo> routeInfos = new ArrayList<>();
+            List<RouteInfo> routeInfos = new ArrayList<RouteInfo>();
 
             for (int i = 0; i < endPointsNum; i++) {
                 for (int j = 0; j < endPointsNum; j++) {
-                    if (graph[i][j] == 1) {
+                    if (graph[i][j] == 1 && (i / ToRSwitchNum != j / ToRSwitchNum)) {
                         for (int k = 0; k < coreSwitchNum; k++) {
                             if (!ToR_send_CoreSet_map.get(i / ToRSwitchNum).contains(k)
                                     && !ToR_send_CoreSet_map.get(j / ToRSwitchNum).contains(k)) {
