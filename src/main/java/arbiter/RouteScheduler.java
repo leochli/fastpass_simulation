@@ -1,5 +1,9 @@
 package arbiter;
 
+import Benchmark.FastPassBenchmark;
+import Benchmark.RouteInfo;
+import Benchmark.TimeSlotSendingPlan;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
@@ -10,10 +14,6 @@ class RouteScheduler implements Runnable {
     public static int ToRSwitchNum = 4;
     public static int coreSwitchNum = 4;
     public static int endPointsNum = 16;
-
-    public static List aggSwitchList = new ArrayList<>();
-    public static List coreSwitchList = new ArrayList<>();
-
 
     public void run() {
         Set<Pair> curr = null;
@@ -29,15 +29,13 @@ class RouteScheduler implements Runnable {
             while ((curr = FastPass.removeFromWaitListRoute()) == null) ;
             it = curr.iterator();
 
-            int [][] graph = new int[endPointsNum][endPointsNum];
+            int[][] graph = new int[endPointsNum][endPointsNum];
             long cur_timeslot = 0;
 
             HashMap<Integer, Set<Integer>> ToR_send_CoreSet_map = new HashMap<>();
-            HashMap<Integer, Set<Integer>> ToR_recv_CoreSet_map = new HashMap<>();
 
-            for(int i = 0; i < ToRSwitchNum; i++){
+            for (int i = 0; i < ToRSwitchNum; i++) {
                 ToR_send_CoreSet_map.put(i, new HashSet<Integer>());
-                ToR_recv_CoreSet_map.put(i, new HashSet<Integer>());
             }
 
             // recursively store information
@@ -49,23 +47,28 @@ class RouteScheduler implements Runnable {
                 //System.out.println("Source: " + next.src + " Destination: " + next.dest + " Timeslot: " + next.last_assigned);
             }
 
-            for(int i = 0; i < endPointsNum; i++){
-                for(int j = 0; j < endPointsNum; j++) {
-                    if(graph[i][j] == 1){
-                        for(int k = 0; k < coreSwitchNum; k++){
-                            if(!ToR_send_CoreSet_map.get(i / ToRSwitchNum).contains(k)
-                                    && !ToR_recv_CoreSet_map.get(j / ToRSwitchNum).contains(k)){
-                                System.out.println("Source endpoint: " + i + " Destination endpoint: " + j + " Timeslot: " + cur_timeslot);
-                                System.out.println("Path: " + i / ToRSwitchNum + " -- " + k + " -- " + j / ToRSwitchNum);
+            List<RouteInfo> routeInfos = new ArrayList<>();
+
+            for (int i = 0; i < endPointsNum; i++) {
+                for (int j = 0; j < endPointsNum; j++) {
+                    if (graph[i][j] == 1) {
+                        for (int k = 0; k < coreSwitchNum; k++) {
+                            if (!ToR_send_CoreSet_map.get(i / ToRSwitchNum).contains(k)
+                                    && !ToR_send_CoreSet_map.get(j / ToRSwitchNum).contains(k)) {
                                 ToR_send_CoreSet_map.get(i / ToRSwitchNum).add(k);
-                                ToR_recv_CoreSet_map.get(j / ToRSwitchNum).add(k);
+                                ToR_send_CoreSet_map.get(j / ToRSwitchNum).add(k);
+
+                                RouteInfo routeInfo = new RouteInfo(i, j, Arrays.asList(i / ToRSwitchNum, k, j / ToRSwitchNum));
+                                routeInfos.add(routeInfo);
                                 break;
                             }
                         }
                     }
                 }
             }
-            System.out.println("Current Timeslot End.");
+
+            TimeSlotSendingPlan sendingPlan = new TimeSlotSendingPlan(cur_timeslot, routeInfos);
+            FastPassBenchmark.pushToSendingPlan(sendingPlan);
         }
     }
 
