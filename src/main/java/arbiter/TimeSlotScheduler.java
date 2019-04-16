@@ -33,6 +33,7 @@ class TimeSlotScheduler implements Runnable {
         int test_zero;
         int offset;
         boolean start;
+        boolean repeat_ip;
         int timeslot_offset;
         while (true) {
             curr = null;
@@ -43,11 +44,11 @@ class TimeSlotScheduler implements Runnable {
             start = false;
             timeslot_offset = 0;
             while ((curr = FastPass.removeFromWaitListTimeslot()) == null) {
-                //System.out.println(curr);
+//                System.out.println(curr);
                 updateCheckpoint();
             }
-            //System.out.println(curr);
             curr_string = curr.src + DELIMITER + curr.dest;
+//            System.out.println(curr_string);
             if (!(pair_timeslot_bitstrings.containsKey(curr_string))) {
                 pair_timeslot_bitstrings.put(curr_string, 0);
             }
@@ -59,44 +60,64 @@ class TimeSlotScheduler implements Runnable {
                 if (nextkey.equals(curr_string))
                     continue;
                 runningValue = runningValue & pair_timeslot_bitstrings.get(nextkey);
-                //System.out.println(runningValue);
+//                System.out.println("Running value: " + runningValue);
             }
             int index = 0;
-            while (test_zero == 1 && index < 32) {
+            while (test_zero == 1 && index < 16) {
                 test_zero = runningValue & 1;
                 runningValue = runningValue >> 1;
-                if (start == false) {
+                if (!start) {
                     offset = 1;
                 } else {
                     offset = offset << 1;
-                    //System.out.println("Offset:" + offset);
+//                    System.out.println("Offset: " + offset);
                     timeslot_offset++;
                 }
                 start = true;
                 index++;
             }
-            //System.out.println(test_zero);
-            if (test_zero == 1 && index >= 32) {
+
+//            System.out.println("test_zero: " + test_zero);
+            if (index >= 16) {
                 //System.out.println("entered 1");
                 schedule_later.add(curr);
-            } else {
+            }
+            else {
                 //System.out.println("entered 2");
 
-                if (test_zero == 1 && start == false) {
-                    //System.out.println("entered 3");
+                if (test_zero == 1 && !start) {
+//                    System.out.println("entered 3");
                     offset = 1;
                     timeslot_offset = 0;
                 }
-                //System.out.println("last checkpoint" + last_checkpoint_timeslot);
-                //System.out.println("timeslot_offset" + timeslot_offset);
+
+                repeat_ip = false;
                 curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
-                pair_timeslot_bitstrings.put(curr_string, pair_timeslot_bitstrings.get(curr_string) | offset);
-                if (send_to_route_scheduler.containsKey(curr.last_assigned) == false) {
-                    send_to_route_scheduler.put(curr.last_assigned, new HashSet<Pair>());
+                if(send_to_route_scheduler.containsKey(curr.last_assigned)){
+                    Set<Pair> curr_set = send_to_route_scheduler.get(curr.last_assigned);
+                    for (Pair temp : curr_set) {
+                        if(temp.src.equals(curr.src) || temp.dest.equals(curr.dest)){
+                            schedule_later.add(curr);
+                            repeat_ip = true;
+                            updateCheckpoint();
+                            break;
+                        }
+                    }
                 }
-                //System.out.println("Last assigned: " + curr.last_assigned);
-                send_to_route_scheduler.get(curr.last_assigned).add(curr);
-                updateCheckpoint();
+
+                if(!repeat_ip) {
+//                System.out.println("last checkpoint " + last_checkpoint_timeslot);
+//                System.out.println("timeslot_offset " + timeslot_offset);
+                    curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
+                    pair_timeslot_bitstrings.put(curr_string, pair_timeslot_bitstrings.get(curr_string) | offset);
+                    //                System.out.println("bit_string " + Integer.toBinaryString(pair_timeslot_bitstrings.get(curr_string) | offset));
+                    //                System.out.println("Last assigned: " + curr.last_assigned);
+                    if (!send_to_route_scheduler.containsKey(curr.last_assigned)) {
+                        send_to_route_scheduler.put(curr.last_assigned, new HashSet<Pair>());
+                    }
+                    send_to_route_scheduler.get(curr.last_assigned).add(curr);
+                    updateCheckpoint();
+                }
             }
         }
     }
