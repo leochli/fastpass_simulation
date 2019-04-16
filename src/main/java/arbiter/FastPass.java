@@ -1,6 +1,8 @@
 package arbiter;
 
 
+import Benchmark.FastPassBenchmark;
+
 import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -12,6 +14,12 @@ public class FastPass implements Runnable {
     private static Queue<String> requests;
     private static Queue<Set<Pair>> wait_list_route;
 
+    /**
+     * mode means running mode:
+     * 0 -> baseline (randomly allocated)
+     * 1 -> fastpass
+     */
+    public static final int MODE = 1;
 
     public static final int INITIAL_CAPACITY = 10;
     public static final String DELIMITER = ":";
@@ -33,6 +41,7 @@ public class FastPass implements Runnable {
         Thread tss = new Thread(new TimeSlotScheduler());
         Thread ae = new Thread(new AddressExtractor());
         Thread rs = new Thread(new RouteScheduler());
+        Thread bm = new Thread(new FastPassBenchmark());
         System.out.println("starting server");
         s.start();
         System.out.println("starting addess extractor");
@@ -41,6 +50,8 @@ public class FastPass implements Runnable {
         tss.start();
         System.out.println("starting route scheduler");
         rs.start();
+        System.out.println("starting fastpass benchmark");
+        bm.start();
 		/*
 		StaticFlowPusher sfp = new StaticFlowPusher();
 		sfp.run();

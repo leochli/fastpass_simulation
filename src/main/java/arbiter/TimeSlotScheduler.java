@@ -81,8 +81,7 @@ class TimeSlotScheduler implements Runnable {
             if (index >= 16) {
                 //System.out.println("entered 1");
                 schedule_later.add(curr);
-            }
-            else {
+            } else {
                 //System.out.println("entered 2");
 
                 if (test_zero == 1 && !start) {
@@ -93,10 +92,10 @@ class TimeSlotScheduler implements Runnable {
 
                 repeat_ip = false;
                 curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
-                if(send_to_route_scheduler.containsKey(curr.last_assigned)){
+                if (send_to_route_scheduler.containsKey(curr.last_assigned)) {
                     Set<Pair> curr_set = send_to_route_scheduler.get(curr.last_assigned);
                     for (Pair temp : curr_set) {
-                        if(temp.src.equals(curr.src) || temp.dest.equals(curr.dest)){
+                        if (temp.src.equals(curr.src) || temp.dest.equals(curr.dest)) {
                             schedule_later.add(curr);
                             repeat_ip = true;
                             updateCheckpoint();
@@ -105,7 +104,7 @@ class TimeSlotScheduler implements Runnable {
                     }
                 }
 
-                if(!repeat_ip) {
+                if (!repeat_ip) {
 //                System.out.println("last checkpoint " + last_checkpoint_timeslot);
 //                System.out.println("timeslot_offset " + timeslot_offset);
                     curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
