@@ -36,7 +36,6 @@ public class FastPass implements Runnable {
     }
 
     public void run() {
-        // TODO
         Thread s = new Thread(new Server());
         Thread tss = new Thread(new TimeSlotScheduler());
         Thread ae = new Thread(new AddressExtractor());
@@ -52,22 +51,7 @@ public class FastPass implements Runnable {
         rs.start();
         System.out.println("starting fastpass benchmark");
         bm.start();
-		/*
-		StaticFlowPusher sfp = new StaticFlowPusher();
-		sfp.run();
-		*/
     }
-	
-	/*
-	class StaticFlowPusher implements Runnable
-	{
-		@Override
-		public void run() 
-		{
-			// TODO Auto-generated method stub
-			
-		}
-	}*/
 
     public static synchronized boolean addRequest(String pair) {
         if (requests.size() < request_cap)
