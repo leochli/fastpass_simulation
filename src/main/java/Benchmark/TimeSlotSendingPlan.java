@@ -2,6 +2,10 @@ package Benchmark;
 
 import java.util.List;
 
+/**
+ * TimeSlotSendingPlan class represents the collections of sending schedule
+ * in a specific timeslot.
+ */
 public class TimeSlotSendingPlan implements Comparable<TimeSlotSendingPlan> {
     long timeslot;
     List<RouteInfo> plans;

@@ -21,6 +21,9 @@ public class FastPass implements Runnable {
      */
     public static final int MODE = 1;
 
+    /**
+     * configuration
+     */
     public static final int INITIAL_CAPACITY = 10;
     public static final String DELIMITER = ":";
     public static final long MAX_TIME = 1000000000L;
@@ -35,6 +38,9 @@ public class FastPass implements Runnable {
         wait_list_route = new LinkedList<Set<Pair>>();
     }
 
+    /**
+     * start every element of our system
+     */
     public void run() {
         Thread s = new Thread(new Server());
         Thread tss = new Thread(new TimeSlotScheduler());
@@ -53,32 +59,65 @@ public class FastPass implements Runnable {
         bm.start();
     }
 
+    /**
+     * add request to queue
+     *
+     * @param pair
+     * @return
+     */
     public static synchronized boolean addRequest(String pair) {
         if (requests.size() < request_cap)
             return requests.add(pair);
         else return false;
     }
 
+    /**
+     * get first request
+     *
+     * @return
+     */
     public static synchronized String getRequest() {
         return requests.poll();
     }
 
+    /**
+     * add to timeslot time slot
+     *
+     * @param p
+     * @return
+     */
     public static synchronized boolean addToWaitListTimeslot(Pair p) {
         if (wait_list_timeslot.size() < timeslot_cap)
             return wait_list_timeslot.add(p);
         else return false;
     }
 
+    /**
+     * get element from time slot waitlist queue
+     *
+     * @return
+     */
     public static synchronized Pair removeFromWaitListTimeslot() {
         return wait_list_timeslot.poll();
     }
 
+    /**
+     * add to waitlist route queue
+     *
+     * @param sp
+     * @return
+     */
     public static synchronized boolean addToWaitListRoute(Set<Pair> sp) {
         if (wait_list_route.size() < route_cap)
             return wait_list_route.add(sp);
         else return false;
     }
 
+    /**
+     * get element from route waitlist queue
+     *
+     * @return
+     */
     public static synchronized Set<Pair> removeFromWaitListRoute() {
         return wait_list_route.poll();
     }

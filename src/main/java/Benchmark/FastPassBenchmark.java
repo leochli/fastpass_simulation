@@ -8,7 +8,8 @@ import java.util.HashMap;
 
 public class FastPassBenchmark implements Runnable {
 
-    public static final int MTU_SIZE = 1500; // 1500 bytes
+
+    public static final int MTU_SIZE = 1500;
     int time_passed = 0;
     int total_queue_size = 0;
 
@@ -16,24 +17,30 @@ public class FastPassBenchmark implements Runnable {
      * priorityqueue<timeslot, list of sending routes in this timeslot>
      */
     public static PriorityBlockingQueue<TimeSlotSendingPlan> timeslot_routes;
+    /**
+     * store ingress queuing data to core switch
+     */
     private ConcurrentHashMap<String, Integer> ingress_edge_queue_map;
+    /**
+     * store egress queuing data to core switch
+     */
     private ConcurrentHashMap<String, Integer> egress_edge_queue_map;
-    private HashMap<String, LinkedList<String>> queue_next_step;
 
     public FastPassBenchmark() {
         timeslot_routes = new PriorityBlockingQueue<TimeSlotSendingPlan>();
         ingress_edge_queue_map = new ConcurrentHashMap<String, Integer>();
         egress_edge_queue_map = new ConcurrentHashMap<String, Integer>();
-        queue_next_step = new HashMap<String, LinkedList<String>>();
     }
 
     /**
      * calculate the benchmark statistics
      */
     public void run() {
-
         while (true) {
             TimeSlotSendingPlan curr;
+            /**
+             * waiting for new sending plan
+             */
             while ((curr = getSendingPlan()) == null) {
                 try {
                     Thread.sleep(10);
@@ -42,9 +49,11 @@ public class FastPassBenchmark implements Runnable {
                 }
             }
 
+            /**
+             * calculate queue statistics
+             */
             time_passed++;
             System.out.println("[ Timeslot #" + curr.timeslot + " ]");
-
             for (RouteInfo routeInfo : curr.plans) {
                 int sender = routeInfo.startClient;
                 int receiver = routeInfo.endClient;
@@ -64,7 +73,6 @@ public class FastPassBenchmark implements Runnable {
                 } else {
                     egress_edge_queue_map.put(edge2, egress_edge_queue_map.get(edge2) + 1);
                 }
-
                 System.out.println("    Path: server [" + sender + "] -> ToR [" + startToR + "] -> Core Switch [" + coreSwitch + "] -> " +
                         "ToR [" + endToR + "] -> receiver [" + receiver + "].");
             }
@@ -75,6 +83,11 @@ public class FastPassBenchmark implements Runnable {
         }
     }
 
+    /**
+     * processQueue process queue in this timeslot
+     *
+     * @param edge_queue_map
+     */
     public void processQueue(ConcurrentHashMap<String, Integer> edge_queue_map) {
         for (Map.Entry<String, Integer> entry : edge_queue_map.entrySet()) {
             int val = entry.getValue();
@@ -87,6 +100,12 @@ public class FastPassBenchmark implements Runnable {
         }
     }
 
+    /**
+     * calculateQueue calculates status of queuing in every switch
+     *
+     * @param ingress_edge_queue_map
+     * @param egress_edge_queue_map
+     */
     public void calculateQueue(ConcurrentHashMap<String, Integer> ingress_edge_queue_map, ConcurrentHashMap<String, Integer>
             egress_edge_queue_map) {
         int edge_total = 0;
@@ -109,15 +128,27 @@ public class FastPassBenchmark implements Runnable {
         int queue_size = (edge_total - map_total_size) * MTU_SIZE;
         total_queue_size += queue_size;
         System.out.println("    Queuing size: " + queue_size + " KB");
-        System.out.println("    Average queuing size: " + ((double) total_queue_size) / time_passed + " KB");
+        System.out.println("    Average queuing size: " + ((double) total_queue_size) / time_passed + " Bytes");
         System.out.println();
     }
 
 
+    /**
+     * pushToSendingPlan receives sending plan from other thread,
+     * which is thread-safe.
+     *
+     * @param plan
+     * @return
+     */
     public static synchronized boolean pushToSendingPlan(TimeSlotSendingPlan plan) {
         return timeslot_routes.offer(plan);
     }
 
+    /**
+     * getSendingPlan gets the next allocated sending plan
+     *
+     * @return
+     */
     public static synchronized TimeSlotSendingPlan getSendingPlan() {
         return timeslot_routes.poll();
     }
