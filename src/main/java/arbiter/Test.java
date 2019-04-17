@@ -1,9 +1,8 @@
 package arbiter;
 
-/*
- * Test Class
- *
- * - Initiating a FastPass instance
+/**
+ *  Test Class
+ *   - Initiating a FastPass instance
  */
 public class Test {
     public static void main(String[] args) {

@@ -57,32 +57,49 @@ class RouteScheduler implements Runnable {
                 ToR_recv_CoreSet_map.put(i, new HashSet<>());
             }
 
-            // recursively store information and construct the bipartite graph
-            while (it.hasNext()) {
-                next = it.next();
-                // row --> source, col --> destination
-                graph[Integer.parseInt(next.src)][Integer.parseInt(next.dest)] = 1;
-                cur_timeslot = next.last_assigned;
-            }
+            /**
+             * Use FastPass route generator or random route generator
+             */
+            if (FastPass.MODE == 1) {
+                // recursively store information and construct the bipartite graph
+                while (it.hasNext()) {
+                    next = it.next();
+                    // row --> source, col --> destination
+                    graph[Integer.parseInt(next.src)][Integer.parseInt(next.dest)] = 1;
+                    cur_timeslot = next.last_assigned;
+                }
 
-            // Route Allocation
-            for (int i = 0; i < endPointsNum; i++) {
-                for (int j = 0; j < endPointsNum; j++) {
-                    if (graph[i][j] == 1 && (i / ToRSwitchNum != j / ToRSwitchNum)) {
-                        for (int k = 0; k < coreSwitchNum; k++) {
-                            // check if the core has been used by this ToR
-                            if (!ToR_send_CoreSet_map.get(i / ToRSwitchNum).contains(k)
-                                    && !ToR_recv_CoreSet_map.get(j / ToRSwitchNum).contains(k)) {
-                                ToR_send_CoreSet_map.get(i / ToRSwitchNum).add(k);
-                                ToR_recv_CoreSet_map.get(j / ToRSwitchNum).add(k);
+                // Route Allocation
+                for (int i = 0; i < endPointsNum; i++) {
+                    for (int j = 0; j < endPointsNum; j++) {
+                        if (graph[i][j] == 1 && (i / ToRSwitchNum != j / ToRSwitchNum)) {
+                            for (int k = 0; k < coreSwitchNum; k++) {
+                                // check if the core has been used by this ToR
+                                if (!ToR_send_CoreSet_map.get(i / ToRSwitchNum).contains(k)
+                                        && !ToR_recv_CoreSet_map.get(j / ToRSwitchNum).contains(k)) {
+                                    ToR_send_CoreSet_map.get(i / ToRSwitchNum).add(k);
+                                    ToR_recv_CoreSet_map.get(j / ToRSwitchNum).add(k);
 
-                                RouteInfo routeInfo = new RouteInfo(i, j,
-                                        Arrays.asList(i / ToRSwitchNum, k, j / ToRSwitchNum));
-                                routeInfos.add(routeInfo);
-                                break;
+                                    RouteInfo routeInfo = new RouteInfo(i, j,
+                                            Arrays.asList(i / ToRSwitchNum, k, j / ToRSwitchNum));
+                                    routeInfos.add(routeInfo);
+                                    break;
+                                }
                             }
                         }
                     }
+                }
+            }
+            else {
+                while (it.hasNext()) {
+                    next = it.next();
+                    int src = Integer.parseInt(next.src);
+                    int des = Integer.parseInt(next.dest);
+                    int src_tor = src / ToRSwitchNum;
+                    int des_tor = des / ToRSwitchNum;
+                    int core = (int) (Math.random() * coreSwitchNum);
+                    RouteInfo routeInfo = new RouteInfo(src, des, Arrays.asList(src_tor, core, des_tor));
+                    routeInfos.add(routeInfo);
                 }
             }
 

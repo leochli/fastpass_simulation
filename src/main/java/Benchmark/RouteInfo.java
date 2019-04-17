@@ -2,6 +2,10 @@ package Benchmark;
 
 import java.util.List;
 
+/**
+ * RouteInfo class represents the information of
+ * an assigned route.
+ */
 public class RouteInfo {
     int startClient;
     int endClient;

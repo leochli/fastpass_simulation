@@ -1,9 +1,8 @@
 package arbiter;
 
-/*
- * Server Class
- *
- * - Simulate generating src and dst for packets transferring
+/**
+ *  Server Class
+ *  - Simulate generating src and dst for packets transferring
  */
 class Server implements Runnable {
     public void run() {

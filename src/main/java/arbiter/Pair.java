@@ -1,5 +1,8 @@
 package arbiter;
 
+/**
+ * Pair class represents pair of sender and receiver server.
+ */
 public class Pair {
     String src;
     String dest;
