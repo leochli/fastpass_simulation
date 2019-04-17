@@ -8,10 +8,18 @@ import java.util.Set;
 import static arbiter.FastPass.DELIMITER;
 import static arbiter.FastPass.MAX_TIME;
 
+/*
+ * Time Slot Scheduler Class
+ *
+ * - Implement time slot allocation algorithm using bit string map and max-min fairness algorithm
+ * - Work off WaitListTimeslot and send the allocated work to the RouteScheduler
+ *
+ */
+
 class TimeSlotScheduler implements Runnable {
     int base_timeslot;
-    HashMap<String, Integer> pair_timeslot_bitstrings;
-    HashMap<Long, Set<Pair>> send_to_route_scheduler;
+    HashMap<String, Integer> pair_timeslot_bitstrings; // the time slot bit map for each pair
+    HashMap<Long, Set<Pair>> send_to_route_scheduler; // to allocate later in the list
     long last_checkpoint_time;
     static long last_checkpoint_timeslot;
 
@@ -26,7 +34,7 @@ class TimeSlotScheduler implements Runnable {
     }
 
     public void run() {
-        Pair curr;
+        Pair curr; // Current request pair
         String curr_string;
         Iterator<String> keys;
         int runningValue;
@@ -43,58 +51,51 @@ class TimeSlotScheduler implements Runnable {
             offset = 1;
             start = false;
             timeslot_offset = 0;
+            // Work off the wait list time slot
             while ((curr = FastPass.removeFromWaitListTimeslot()) == null) {
-//                System.out.println(curr);
                 updateCheckpoint();
             }
+            // bit string map to indicate the recent available time slots
             curr_string = curr.src + DELIMITER + curr.dest;
-//            System.out.println(curr_string);
             if (!(pair_timeslot_bitstrings.containsKey(curr_string))) {
                 pair_timeslot_bitstrings.put(curr_string, 0);
             }
-            //System.out.println("here?");
-            keys = pair_timeslot_bitstrings.keySet().iterator();
-            String nextkey;
-            while (keys.hasNext()) {
-                nextkey = keys.next();
-                if (nextkey.equals(curr_string))
-                    continue;
-                runningValue = runningValue & pair_timeslot_bitstrings.get(nextkey);
-//                System.out.println("Running value: " + runningValue);
-            }
+
+            // Find the next available time slot for this src and destination
+            runningValue = pair_timeslot_bitstrings.get(curr_string);
             int index = 0;
-            while (test_zero == 1 && index < 16) {
+            while (test_zero == 1 && index < 32) {
                 test_zero = runningValue & 1;
                 runningValue = runningValue >> 1;
                 if (!start) {
                     offset = 1;
                 } else {
                     offset = offset << 1;
-//                    System.out.println("Offset: " + offset);
                     timeslot_offset++;
                 }
                 start = true;
                 index++;
             }
 
-//            System.out.println("test_zero: " + test_zero);
-            if (index >= 16) {
-                //System.out.println("entered 1");
+            // Time slots exceed the integer size
+            if (index >= 32) {
                 schedule_later.add(curr);
-            } else {
-                //System.out.println("entered 2");
-
+            }
+            else {
                 if (test_zero == 1 && !start) {
-//                    System.out.println("entered 3");
                     offset = 1;
                     timeslot_offset = 0;
                 }
 
+                // Detect if the source or destination is already used in this time slot
                 repeat_ip = false;
                 curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
+
+                // Send to the route scheduler
                 if (send_to_route_scheduler.containsKey(curr.last_assigned)) {
                     Set<Pair> curr_set = send_to_route_scheduler.get(curr.last_assigned);
                     for (Pair temp : curr_set) {
+                        // If the src or destination is occupied, move to schedule later
                         if (temp.src.equals(curr.src) || temp.dest.equals(curr.dest)) {
                             schedule_later.add(curr);
                             repeat_ip = true;
@@ -104,13 +105,10 @@ class TimeSlotScheduler implements Runnable {
                     }
                 }
 
+                // Packet is okay to transmit in this time slot
                 if (!repeat_ip) {
-//                System.out.println("last checkpoint " + last_checkpoint_timeslot);
-//                System.out.println("timeslot_offset " + timeslot_offset);
                     curr.last_assigned = last_checkpoint_timeslot + (long) timeslot_offset;
                     pair_timeslot_bitstrings.put(curr_string, pair_timeslot_bitstrings.get(curr_string) | offset);
-                    //                System.out.println("bit_string " + Integer.toBinaryString(pair_timeslot_bitstrings.get(curr_string) | offset));
-                    //                System.out.println("Last assigned: " + curr.last_assigned);
                     if (!send_to_route_scheduler.containsKey(curr.last_assigned)) {
                         send_to_route_scheduler.put(curr.last_assigned, new HashSet<Pair>());
                     }
@@ -121,8 +119,8 @@ class TimeSlotScheduler implements Runnable {
         }
     }
 
+    // Method to update the time slots, refresh the bit map
     public boolean updateCheckpoint() {
-        //System.out.println("no bottleneck");
         long curr_time = System.nanoTime();
         long diff;
         long schedule_route;
@@ -130,7 +128,6 @@ class TimeSlotScheduler implements Runnable {
         Iterator<String> keys;
         Iterator<Pair> put_backs;
         if ((diff = curr_time - last_checkpoint_time) >= MAX_TIME) {
-            //System.out.println("changing of the guard");
             schedule_route = diff / MAX_TIME;
             for (int i = 0; i < schedule_route; i++) {
                 if ((curr_timeslot = send_to_route_scheduler.get(last_checkpoint_timeslot + i)) != null) {
@@ -140,6 +137,7 @@ class TimeSlotScheduler implements Runnable {
 
             }
 
+            // Push back all the requests in hte schedule later into wait list timeslot
             put_backs = schedule_later.iterator();
             Pair curr_pair;
             while (put_backs.hasNext()) {
@@ -148,6 +146,7 @@ class TimeSlotScheduler implements Runnable {
             }
             schedule_later.clear();
 
+            // Refresh the time slot bit string
             keys = pair_timeslot_bitstrings.keySet().iterator();
             int curr;
             String currKey;
@@ -159,10 +158,8 @@ class TimeSlotScheduler implements Runnable {
             }
             last_checkpoint_time = curr_time;
             last_checkpoint_timeslot = last_checkpoint_timeslot + schedule_route;
-            //System.out.println("done");
             return true;
         } else {
-            //System.out.println("done");
             return false;
         }
     }

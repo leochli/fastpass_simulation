@@ -45,16 +45,16 @@ class RouteScheduler implements Runnable {
             long cur_timeslot = 0;
 
             // record a set of cores that have been used by each ToR as sender
-            HashMap<Integer, Set<Integer>> ToR_send_CoreSet_map = new HashMap<>();
+            HashMap<Integer, Set<Integer>> ToR_send_CoreSet_map = new HashMap<Integer, Set<Integer>>();
 
             // record a set of cores that have been used by each ToR as receiver
-            HashMap<Integer, Set<Integer>> ToR_recv_CoreSet_map = new HashMap<>();
+            HashMap<Integer, Set<Integer>> ToR_recv_CoreSet_map = new HashMap<Integer, Set<Integer>>();
 
             List<RouteInfo> routeInfos = new ArrayList<RouteInfo>();
 
             for (int i = 0; i < ToRSwitchNum; i++) {
-                ToR_send_CoreSet_map.put(i, new HashSet<>());
-                ToR_recv_CoreSet_map.put(i, new HashSet<>());
+                ToR_send_CoreSet_map.put(i, new HashSet<Integer>());
+                ToR_recv_CoreSet_map.put(i, new HashSet<Integer>());
             }
 
             /**
